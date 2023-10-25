@@ -1,0 +1,65 @@
+#!/usr/bin/env python
+
+"""Box Stats report
+
+Usage:
+  report ( <file> )
+
+"""
+
+from docopt import docopt
+from functions import reportTotals
+from pprint import pprint
+import csv
+import os
+
+try:
+    from schema import Schema, And, Or, Use, SchemaError
+except ImportError:
+    exit('This example requires that `schema` data-validation library'
+         ' is installed: \n    pip install schema\n'
+         'https://github.com/halst/schema')
+
+arguments = docopt(__doc__)
+
+schema = Schema({
+    '<file>': Schema(os.path.exists, error=f"File does not exist: {arguments['<file>']}")
+})
+
+try:
+    arugments = schema.validate(arguments)
+except SchemaError as e:
+    exit(e)
+
+filename = arguments["<file>"]
+
+usage = {}
+
+with open(filename, 'r') as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        # print(f"row: {row}")
+        action = row["Action"]
+        date = row["Date"]
+        user = row["User Name"]
+        size = row["Size (kB)"]
+        
+        if size == "":
+            size = float(0)
+        else:
+            size = float(size)
+
+        if action not in usage:
+            usage[action] = {}
+        
+        if user not in usage[action]:
+            usage[action][user] = []
+
+        usage[action][user].append(
+                {
+                "Date": date, 
+                "Size": size
+            } 
+        )
+
+reportTotals(usage)
